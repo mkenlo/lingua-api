@@ -17,7 +17,7 @@ my_db = client.linguadb
 
 @api.route("/")
 def index(request):
-    return response.json({"message": "Hey, Hello! You did GREAT!"})
+    return response.json({"message": "welcome to Lingua API"})
 
 
 @api.route("/languages")
@@ -25,81 +25,67 @@ def get_languages(request):
     """
     Return all languages
     Endpoint example: /languages
-    No PARAMETERS
+    if query parameters are given, the endpoint will return that specific object
+    Example:  /languages?code=FRA
+    Parameter Name: code
     """
-    data = my_db.languages.find()
+    queryfilter = {}
+    if len(request.args) != 0:
+        if "code" not in request.args:
+            return response.json({"message": "invalid query parameters "})
+        else:
+            queryfilter["code"] = request.args["code"][0]
+
     languages = []
-    for d in data:
+    for d in my_db.languages.find(queryfilter):
         d['_id'] = str(d['_id'])
         languages.append(d)
-    return response.json({"message": "All languages", "data": languages})
+    return response.json({"message": "successfull", "data": languages})
 
 
 @api.route("/sentences")
-def get_sentences_per_lang(request):
+def get_sentences(request):
     """
+    return all sentences. If a parameter is given, then all sentences from that language
+    are returned
     Endpoint example: /sentences?lang=fra
-    Query Parameter: lang
+    Query Parameter: (optional) lang 
     """
-    if len(request.args) == 0:
-        return response.json({"message": "invalid payload"})
-    lang = request.args["lang"][0]
-    data = []
-    if len(lang) > 0:
-        for d in my_db.sentences.find({"lang": lang}):
-            d['_id'] = str(d)
-            data.append(d)
-            print(data)
-    else:
-        data = my_db.sentences.find_one({"_id": 0})
-    # data['_id'] = str(data['_id'])
-    return response.json({"message": "sentences from given language", "data": data})
+    queryfilter = {}
+    if len(request.args) != 0:
+        if "lang" not in request.args:
+            return response.json({"message": "invalid query parameters "})
+        else:
+            queryfilter["lang"] = request.args["lang"][0]
+    sentences = []
+    for d in my_db.sentences.find(queryfilter):
+        d['_id'] = str(d)
+        sentences.append(d)
 
-
-@api.route("/language/<lang_code>")
-def get_single_language(request, lang_code):
-    """
-    PURPOSE: Return a single language object
-    PARAMETERS TYPE: query parameter
-    Request  parameters:
-            code :  the  code of the language  (Usually THREE letters words)
-    ENdpoint Example: /language?code=FRA
-    """
-    # lang_code = request.args['code'][0]
-    data = my_db.languages.find_one({"code": lang_code.upper()})
-    data['_id'] = str(data['_id'])
-    return response.json({"message": "single language", "data": data})
-
-    """    if len(request.args) == 0:
-        return response.json({"message": "invalid payload"})
-    else:
-        # lang_code = request.args['code'][0]
-        data = my_db.languages.find_one({"code": lang_code.upper()})
-        data['_id'] = str(data['_id'])
-        return response.json({"message": "single language", "data": data}) """
+    return response.json({"message": "successfull", "data": sentences})
 
 
 @api.route("/sentence", methods=["POST"])
-def add_sentence(request):
-    """add a new sentence to translate
+def add_sentences(request):
+    """add a or multiple new sentences to translate
     Request Parameters: array of language objects
     {
         "language" : the language in which the sentence is written,
         "text": sentence to add
     }
-
+     @TODO : Some sanity check need to be done on POST DATA
     """
     req = request.json
     my_db.sentences.insert_many(req)
-    return response.json({"received": True, "message": "insert successfull", "data": req})
+    return response.json({"message": "successfull", "data": req})
 
 
-@api.route("/track", methods=["POST"])
+@api.route("/tracks", methods=["POST"])
 def save_track(request):
     """
-        save a single audio recording
+        save one or many audio recordings
 
-        request Parameters:
+        request Parameters: array of recording objects
         {
             "text": "the sentence to translate",
             language: {
@@ -118,21 +104,12 @@ def save_track(request):
     return response.json(res)
 
 
-@api.route("/multitracks", methods=["POST"])
-def save_multitracks(request):
-    """
-        save multiple audios recording
-    """
-    data = request.get_response.json() or {}
-    res = {"message": "Hello, I got your audio file. Will Process it soon"}
-    return response.json(res)
-
-
 @api.route("/mytranslations", methods=["POST"])
 def get_user_translations(request):
     """
     Return all translations for a given users
     """
+    return response.json({"message": "200 successfull"})
 
 
 def kafka_producer(data):
@@ -152,20 +129,3 @@ def on_send_success(record_metadata):
 def on_send_error(excp):
     logging.error('I am an errback', exc_info=excp)
     # handle exception
-
-
-@api.route("/test_request_args")
-async def test_request_args(request):
-    return response.json({
-        "parsed": True,
-        "url": request.url,
-        "query_string": request.query_string,
-        "args": request.args,
-        "raw_args": request.raw_args,
-        "query_args": request.query_args,
-    })
-
-
-@api.route("/json", methods=["POST"])
-def post_json(request):
-    return response.json({"received": True, "message": request.json})

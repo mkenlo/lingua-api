@@ -3,8 +3,10 @@
         "user": "user_id",
         "translations": [
             {
-                "from": "FR",
-                "to": "YEM",
+                "language": {
+                    "from": "FR",
+                    "to": "YEM"
+                },
                 "sentence": "sentence_id",
                 "recording": "/audio.3gp",
                 "date": "07/04/2019"
