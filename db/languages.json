@@ -1,0 +1,26 @@
+[
+    {
+        "language": "francais",
+        "code": "FRA",
+        "default": true,
+        "type": "foreign"
+    },
+    {
+        "language": "english",
+        "code": "ENG",
+        "default": false,
+        "type": "foreign"
+    },
+    {
+        "language": "yemba",
+        "code": "YEM",
+        "default": false,
+        "type": "local"
+    },
+    {
+        "language": "nguiemboon",
+        "code": "NGB",
+        "default": false,
+        "type": "local"
+    }
+]
