@@ -1,0 +1,5 @@
+sanic
+kafka-python
+pymongo
+mongoengine
+manage.py
