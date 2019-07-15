@@ -10,8 +10,14 @@ class Languages(Document):
     type = StringField(required=True)
     default = BooleanField()
 
+
 class Sentences(Document):
     text = StringField(required=True)
     lang = ReferenceField(Languages) 
 
-    
+
+class Users(Document):
+    fullname = StringField()
+    username = StringField()
+    location = StringField()
+    avatar = StringField()
