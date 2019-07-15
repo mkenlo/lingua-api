@@ -13,11 +13,18 @@ class Languages(Document):
 
 class Sentences(Document):
     text = StringField(required=True)
-    lang = ReferenceField(Languages) 
+    lang = ReferenceField(Languages)
 
 
 class Users(Document):
     fullname = StringField()
-    username = StringField()
+    username = StringField(required=True)
     location = StringField()
     avatar = StringField()
+
+
+class Translations(Document):
+    author = ReferenceField(Users)
+    targetlang = ReferenceField(Languages)
+    sentence = ReferenceField(Sentences)
+    file = StringField(required=True)
