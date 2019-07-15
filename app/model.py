@@ -5,7 +5,13 @@ connect('lingua')
 
 
 class Languages(Document):
-    language = StringField(required=true)
-    code = StringField(required=true, max_length=3)
-    type = StringField(required=true)
+    language = StringField(required=True)
+    code = StringField(required=True, max_length=3)
+    type = StringField(required=True)
     default = BooleanField()
+
+class Sentences(Document):
+    text = StringField(required=True)
+    lang = ReferenceField(Languages) 
+
+    
