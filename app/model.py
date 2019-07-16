@@ -1,7 +1,7 @@
 from mongoengine import *
 
 
-connect('lingua')
+connect('linguadb')
 
 
 class Languages(Document):

@@ -3,3 +3,4 @@ kafka-python
 pymongo
 mongoengine
 manage.py
+pytest
