@@ -1,7 +1,7 @@
 from mongoengine import *
+import os
 
-
-connect('linguadb')
+# connect(db=os.environ["DEV_DATABASE_URL"])
 
 
 class Languages(Document):
@@ -27,4 +27,4 @@ class Translations(Document):
     author = ReferenceField(Users)
     targetlang = ReferenceField(Languages)
     sentence = ReferenceField(Sentences)
-    file = StringField(required=True)
+    filename = StringField(required=True)

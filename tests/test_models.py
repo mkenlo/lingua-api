@@ -1,15 +1,16 @@
-from app.model import *
+from .base import BaseTest
+from app.models import *
 import sys
 sys.path.append("..")
 
 
-class TestClassModel(object):
+class TestClassModel(BaseTest):
     def test_languages(self):
         """basic test Languages Collection"""
         lang = Languages(language="russian", code="RUS",
                          type="foreign", default=False)
         lang.save()
-        assert Languages.objects.count() > 0
+        assert Languages.objects.first().language == "russian"
         assert isinstance(lang, Languages)
 
     def test_sentences(self):
@@ -17,7 +18,7 @@ class TestClassModel(object):
         lang = Languages.objects(language="russian").first()
         text = Sentences(text="spasibo", lang=lang)
         text.save()
-        assert Sentences.objects.count() > 0
+        assert Sentences.objects.first().text == "spasibo"
         assert isinstance(text, Sentences)
         assert text.lang.language != "spanish"
 
@@ -32,5 +33,5 @@ class TestClassModel(object):
         lang = Languages.objects().first()
         text = Sentences.objects().first()
         Translations(author=user, targetlang=lang,
-                     sentence=text, file="myFile.3gp").save()
+                     sentence=text, filename="myFile.3gp").save()
         assert Translations.objects().first().author.username == "testy"

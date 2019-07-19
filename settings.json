@@ -1,0 +1,7 @@
+{
+    "app_settings": "",
+    "dev_database_url": "linguadb",
+    "test_database_url": "linguadbtest",
+    "prod_database_url": "linguadbprod",
+    "secret_key": "ObviouslyThisShouldBeVerySecret"
+}
