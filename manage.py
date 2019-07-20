@@ -14,11 +14,11 @@ my_db = client.linguadb
 @manager.command
 def populateDB():
     """populate the Database"""
-    with open('db/languages.json') as f:
+    with open('db/dummy/languages.json') as f:
         data = json.load(f)
         print("1. Seeding Collection languages")
         my_db.languages.insert_many(data)
-    with open('db/sentences.json') as f:
+    with open('db/dummy/sentences.json') as f:
         data = json.load(f)
         print("2. Seeding Collection sentences")
         my_db.sentences.insert_many(data)
@@ -27,8 +27,10 @@ def populateDB():
 @manager.command
 def dropDB():
     """ drop all DATABASE contents"""
-    my_db.languages.drop()
-    print("Dropping Database")
+    print(".....Dropping Database")
+    for collection in my_db.list_collections():
+        print("Dropping Collection " + collection["name"])
+        my_db[collection["name"]].drop()
 
 
 if __name__ == '__main__':
