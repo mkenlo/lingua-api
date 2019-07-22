@@ -2,17 +2,19 @@ from sanic import Blueprint
 from sanic import response
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
-from pymongo import MongoClient
-import json
 import logging
+from app.models import *
+from math import ceil
 
 
 api = Blueprint('api')
 DEFAULT_TOPIC = "audio-recordings"
+ITEMS_PER_PAGE = 20
 
-client = MongoClient('mongodb://localhost:27017/')
 
-my_db = client.linguadb
+responseError = {"message": "Invalid Payload."}
+responseListObjects = {"page": 1, "results": [],
+                       "total_results": 0, "total_pages": 0}
 
 
 @api.route("/")
@@ -20,96 +22,98 @@ def index(request):
     return response.json({"message": "welcome to Lingua API"})
 
 
-@api.route("/languages")
-def get_languages(request):
-    """
-    Return all languages
-    Endpoint example: /languages
-    if query parameters are given, the endpoint will return that specific object
-    Example:  /languages?code=FRA
-    Parameter Name: code
-    """
-    queryfilter = {}
-    if len(request.args) != 0:
-        if "code" not in request.args:
-            return response.json({"message": "invalid query parameters "})
-        else:
-            queryfilter["code"] = request.args["code"][0]
+@api.route("/languages", methods=["POST"])
+def saveLanguages(request):
+    if request.method == "POST":
+        postdata = request.json
+        if "language" not in postdata:
+            return response.json(responseError, status=400)
+        if "code" not in postdata:
+            return response.json(responseError, status=400)
+        if "type" not in postdata:
+            return response.json(responseError, status=400)
+        try:
+            new_lang = Languages(
+                language=postdata["language"],
+                code=postdata["code"],
+                type=postdata["type"])
+            if "default" in postdata:
+                new_lang.default = postdata["default"]
+            new_lang.save()
+            return response.json({"message": "Added One Item"}, status=201)
+        except Exception as err:
+            responseError["message"] = str(err)
+            return response.json(responseError, status=400)
 
-    languages = []
-    for d in my_db.languages.find(queryfilter):
-        d['_id'] = str(d['_id'])
-        languages.append(d)
-    return response.json({"message": "successfull", "data": languages})
+
+@api.route("/languages")
+def getLanguages(request):
+    try:
+        languages = Languages.objects()
+        args = request.json
+        if args:
+            if len(args) > 2:
+                raise Exception("Expecting less than 3 arguments")
+            if "language" in args:
+                languages = languages.filter(language=args["language"])
+            if "type" in args and "language" in args:
+                responseError["message"] = "Cannot filter with both arguments `language` and `type`"
+                return response.json(responseError, status=400)
+            if "type" in args:
+                languages = languages.filter(type=args["type"])
+            if "page" in args and int(args["page"]) > 1:
+                languages = languages.skip(int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = languages.count()
+        responseListObjects["total_pages"] = ceil(
+            languages.count() / ITEMS_PER_PAGE)
+        languages.limit(ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in languages]
+        return response.json(responseListObjects)
+    except Exception as err:
+        responseError["message"] = err
+        return response.json(responseError, status=400)
 
 
 @api.route("/sentences")
-def get_sentences(request):
-    """
-    return all sentences. If a parameter is given, then all sentences from that language
-    are returned
-    Endpoint example: /sentences?lang=fra
-    Query Parameter: (optional) lang 
-    """
-    queryfilter = {}
-    if len(request.args) != 0:
-        if "lang" not in request.args:
-            return response.json({"message": "invalid query parameters "})
-        else:
-            queryfilter["lang"] = request.args["lang"][0]
-    sentences = []
-    for d in my_db.sentences.find(queryfilter):
-        d['_id'] = str(d)
-        sentences.append(d)
-
-    return response.json({"message": "successfull", "data": sentences})
+def getSentences(request):
+    pass
 
 
-@api.route("/sentence", methods=["POST"])
-def add_sentences(request):
-    """add a or multiple new sentences to translate
-    Request Parameters: array of language objects
-    {
-        "language" : the language in which the sentence is written,
-        "text": sentence to add
-    }
-     @TODO : Some sanity check need to be done on POST DATA
-    """
-    req = request.json
-    my_db.sentences.insert_many(req)
-    return response.json({"message": "successfull", "data": req})
+@api.route("/sentences/{id}")
+def getSentencesById(request, id):
+    pass
 
 
-@api.route("/tracks", methods=["POST"])
-def save_track(request):
-    """
-        save one or many audio recordings
-
-        request Parameters: array of recording objects
-        {
-            "text": "the sentence to translate",
-            language: {
-                "from": "the language in which the sentence is written",
-                "to": "the language in which the audio file is recorded"
-            },
-            "audioFile: "the translated audio recording of `text`"
-        }
-
-        @TODO : Some sanity check need to be done on POST DATA
-    """
-    data = request.body
-    # Calling Kafka Producer
-    kafka_producer(data)
-    res = {"message": "Hello, I got your audio file. Will Process it soon", "data": data}
-    return response.json(res)
+@api.route("/sentences/{id}/translations")
+def getTranslationsBySentenceId(request, id):
+    pass
 
 
-@api.route("/mytranslations", methods=["POST"])
-def get_user_translations(request):
-    """
-    Return all translations for a given users
-    """
-    return response.json({"message": "200 successfull"})
+@api.route("/translations", methods=["GET, POST"])
+def getTranslations(request):
+    pass
+
+
+@api.route("/translations/{id}")
+def getTranslationsById(request, id):
+    pass
+
+
+@api.route("/users", methods=["POST"])
+def getUsers(request):
+    pass
+
+
+@api.route("/users/{id}")
+def getUsersById(request):
+    pass
+
+
+@api.route("/users/{id}/translations")
+def getTranslationsByUserId(request):
+    pass
 
 
 def kafka_producer(data):
