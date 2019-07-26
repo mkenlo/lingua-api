@@ -46,11 +46,16 @@ class Users(Document):
         }
 
 
+class File(EmbeddedDocument):
+    name = StringField()
+    content = BinaryField()
+
+
 class Translations(Document):
     author = ReferenceField(Users)
     targetlang = ReferenceField(Languages)
     sentence = ReferenceField(Sentences)
-    filename = StringField(required=True)
+    audiofile = EmbeddedDocumentField(File)
 
     def serialize(self):
         return {
@@ -58,5 +63,5 @@ class Translations(Document):
             "author": self.author.serialize(),
             "target_language": self.targetlang.serialize(),
             "sentence": self.sentence.serialize(),
-            "filename": self.filename
+            "audiofile": self.filename.name
         }

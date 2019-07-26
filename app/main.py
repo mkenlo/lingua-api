@@ -48,6 +48,13 @@ def saveLanguages(request):
 
 @api.route("/languages")
 def getLanguages(request):
+    """
+    Return all Languages objects
+    Parameters in Request body
+    {
+        "page" : (int)  [Optional, default is 1]
+    }
+    """
     try:
         languages = Languages.objects()
         args = request.json
@@ -78,6 +85,13 @@ def getLanguages(request):
 
 @api.route("/sentences")
 def getSentences(request):
+    """
+    Return all Sentences objects
+    Parameters in Request body
+    {
+        "page": (int)[Optional, default is 1]
+    }
+    """
     try:
         sentences = Sentences.objects()
         if request.json:
@@ -105,7 +119,6 @@ def getSentences(request):
 def saveSentences(request):
 
     try:
-
         if request.json:
             postdata = request.json
             if "text" not in postdata or "language" not in postdata:
@@ -141,37 +154,173 @@ def getSentencesById(request, id):
 
 @api.route("/sentences/<id>/translations")
 def getTranslationsBySentenceId(request, id):
-    pass
+    try:
+        sentence = Sentences.objects().with_id(id)
+        translations = Translations.objects().filter(sentence=sentence)
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                translations = translations.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = translations.count()
+        responseListObjects["total_pages"] = ceil(
+            translations.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in translations]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
 @api.route("/translations")
 def getTranslations(request):
-    pass
+    """"
+    Return all translations objects
+    Parameters in Request body
+    {
+        "page": (int)[Optional, default is 1]
+    }
+    """
+    try:
+        translations = Translations.objects()
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                translations = translations.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = translations.count()
+        responseListObjects["total_pages"] = ceil(
+            translations.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in translations]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json(responseError, status=400)
 
 
 @api.route("/translations", methods=["POST"])
 def saveTranslations(request):
-    pass
+    """
+    Save a new Translation Document
+    request Parameters:
+        {
+            "sentence":  (string) "ID of the sentence to translate",
+            target_lang: (string) "target language",
+            "audiofile:  (object)
+            {
+                "name":  (string) "audio file name",
+                "content: (bytes) "file content"
+            }
+        }
+    """
+    try:
+        postdata = request.json
+        if not postdata:
+            raise ValueError("Missing Post Data")
+        valid_input = ["author", "target_lang", "sentence", "audiofile"]
+        if not set(valid_input) >= set(postdata):
+            raise AttributeError("Missing or Wrong Arguments")
+        # checking reference fields
+        lang = Languages.objects().filter(
+            language=postdata["target_lang"]).first()
+        author = Users.objects().filter(username=postdata["author"]).first()
+        sentence = Sentences.objects().with_id(postdata["sentence"])
+        if not lang or not author or not sentence:
+            raise Exception("One or More items not Found")
+
+        audioFile = File(
+            name=postdata["audiofile"]["name"],
+            # encode the string into bytes
+            content=postdata["audiofile"]["content"].encode())
+        Translations(author=author, targetlang=lang,
+                     sentence=sentence, audiofile=audioFile).save()
+
+        # TODO Call Kafka Producer Here
+        # data to process {audioFile}
+
+        return response.json({"message": "Added One item"})
+    except Exception as err:
+        return response.json({"message": str(err)}, status=400)
 
 
 @api.route("/translations/<id>")
 def getTranslationsById(request, id):
-    pass
+    try:
+        return response.json(Translations.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
+
+
+@api.route("/users")
+def getUsers(request):
+    try:
+        users = Users.objects()
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                users = users.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = users.count()
+        responseListObjects["total_pages"] = ceil(
+            users.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in users]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json(responseError, status=400)
 
 
 @api.route("/users", methods=["POST"])
-def getUsers(request):
-    pass
+def saveUsers(request):
+    try:
+        postdata = request.json
+        if not postdata:
+            raise ValueError("Missing Post Data")
+        if "username" not in postdata:
+            raise AttributeError("Missing required <username> field")
+        user = Users(username=postdata["username"])
+        if "fullname" in postdata:
+            user.fullname = postdata["fullname"]
+        if "location" in postdata:
+            user.location = postdata["location"]
+        if "avatar" in postdata:
+            user.avatar = postdata["avatar"]
+        user.save()
+        return response.json({"message": "Added one item"})
+    except Exception as err:
+        return response.json({"message": str(err)}, status=400)
 
 
 @api.route("/users/<id>")
-def getUsersById(request):
-    pass
+def getUsersById(request, id):
+    try:
+        return response.json(Users.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
 @api.route("/users/<id>/translations")
-def getTranslationsByUserId(request):
-    pass
+def getTranslationsByUserId(request, id):
+    try:
+        user = Users.objects().with_id(id)
+        translations = Translations.objects().filter(author=user)
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                translations = translations.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = translations.count()
+        responseListObjects["total_pages"] = ceil(
+            translations.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in translations]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
 def kafka_producer(data):
