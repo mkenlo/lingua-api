@@ -60,8 +60,10 @@ class Translations(Document):
     def serialize(self):
         return {
             "id": str(self.pk),
-            "author": self.author.serialize(),
-            "target_language": self.targetlang.serialize(),
-            "sentence": self.sentence.serialize(),
-            "audiofile": self.filename.name
+            "author": self.author.username,
+            "language": {
+                "from": self.sentence.lang.language,
+                "to": self.targetlang.language},
+            "sentence": self.sentence.text,
+            "audiofile": self.audiofile.name
         }

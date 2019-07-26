@@ -196,8 +196,8 @@ def getTranslations(request):
             translations.count() / ITEMS_PER_PAGE)
         responseListObjects["results"] = [d.serialize() for d in translations]
         return response.json(responseListObjects)
-    except Exception:
-        return response.json(responseError, status=400)
+    except Exception as err:
+        return response.json({"message": str(err)}, status=400)
 
 
 @api.route("/translations", methods=["POST"])
@@ -211,7 +211,7 @@ def saveTranslations(request):
             "audiofile:  (object)
             {
                 "name":  (string) "audio file name",
-                "content: (bytes) "file content"
+                "content: (bytes or Base64 String) "file content"
             }
         }
     """
