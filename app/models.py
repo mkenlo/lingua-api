@@ -1,5 +1,6 @@
 from mongoengine import *
 import os
+import ast
 
 
 class Languages(Document):
@@ -10,7 +11,7 @@ class Languages(Document):
 
     def serialize(self):
         return {
-            "language": self.language,
+            "name": self.language,
             "code": self.code,
             "type": self.type,
             "default": self.default
@@ -23,19 +24,21 @@ class Sentences(Document):
 
     def serialize(self):
         return {
-            "text": self.language,
-            "language": self.lang.seriaize()
+            "id": str(self.pk),
+            "text": self.text,
+            "language": self.lang.serialize()
         }
 
 
 class Users(Document):
     fullname = StringField()
-    username = StringField(required=True)
+    username = StringField(unique=True, required=True)
     location = StringField()
     avatar = StringField()
 
     def serialize(self):
         return {
+            "id": str(self.pk),
             "fullname": self.fullname,
             "username": self.username,
             "location": self.location,
@@ -51,6 +54,7 @@ class Translations(Document):
 
     def serialize(self):
         return {
+            "id": str(self.pk),
             "author": self.author.serialize(),
             "target_language": self.targetlang.serialize(),
             "sentence": self.sentence.serialize(),

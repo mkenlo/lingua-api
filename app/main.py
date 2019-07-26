@@ -5,7 +5,7 @@ from kafka.errors import KafkaError
 import logging
 from app.models import *
 from math import ceil
-
+import json
 
 api = Blueprint('api')
 DEFAULT_TOPIC = "audio-recordings"
@@ -78,25 +78,83 @@ def getLanguages(request):
 
 @api.route("/sentences")
 def getSentences(request):
-    pass
+    try:
+        sentences = Sentences.objects()
+        if request.json:
+            if "language" in request.json:
+                language = Languages.objects(
+                    language=request.json["language"]).first()
+                sentences = sentences.filter(lang=language)
+            if "page" in request.json and int(request.json["page"]) > 1:
+                sentences = sentences.skip(
+                    int(request.json["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = request.json["page"]
+
+        responseListObjects["total_results"] = sentences.count()
+        responseListObjects["total_pages"] = ceil(
+            sentences.count() / ITEMS_PER_PAGE)
+        sentences.limit(ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in sentences]
+        return response.json(responseListObjects)
+    except Exception as err:
+        responseError['message'] = str(err)
+        return response.json(responseError, status=400)
 
 
-@api.route("/sentences/{id}")
+@api.route("/sentences", methods=["POST"])
+def saveSentences(request):
+
+    try:
+
+        if request.json:
+            postdata = request.json
+            if "text" not in postdata or "language" not in postdata:
+                raise AttributeError(
+                    "Invalid Payload. Wrong or Missing Attributes")
+
+            new_item = Sentences()
+            if "text" in postdata and isinstance(postdata["text"], str):
+                new_item.text = postdata["text"]
+            if "language" in postdata:
+                language = Languages.objects().filter(
+                    language=postdata["language"]).first()
+                if not language:
+                    raise ValueError(
+                        "No language <{}> found".format(postdata["language"]))
+                new_item.lang = language
+                new_item.save()
+                return response.json({"message": "Added One item"})
+
+        else:
+            raise ValueError("Invalid Payload. No Post Data Found")
+    except Exception as err:
+        return response.json(str(err), status=400)
+
+
+@api.route("/sentences/<id>")
 def getSentencesById(request, id):
-    pass
+    try:
+        return response.json(Sentences.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
-@api.route("/sentences/{id}/translations")
+@api.route("/sentences/<id>/translations")
 def getTranslationsBySentenceId(request, id):
     pass
 
 
-@api.route("/translations", methods=["GET, POST"])
+@api.route("/translations")
 def getTranslations(request):
     pass
 
 
-@api.route("/translations/{id}")
+@api.route("/translations", methods=["POST"])
+def saveTranslations(request):
+    pass
+
+
+@api.route("/translations/<id>")
 def getTranslationsById(request, id):
     pass
 
@@ -106,12 +164,12 @@ def getUsers(request):
     pass
 
 
-@api.route("/users/{id}")
+@api.route("/users/<id>")
 def getUsersById(request):
     pass
 
 
-@api.route("/users/{id}/translations")
+@api.route("/users/<id>/translations")
 def getTranslationsByUserId(request):
     pass
 
