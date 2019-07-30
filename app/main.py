@@ -26,11 +26,8 @@ def index(request):
 def saveLanguages(request):
     if request.method == "POST":
         postdata = request.json
-        if "language" not in postdata:
-            return response.json(responseError, status=400)
-        if "code" not in postdata:
-            return response.json(responseError, status=400)
-        if "type" not in postdata:
+        requiredFields = ["language", "code", "type"]
+        if  not set(requiredFields) >= set( postdata):
             return response.json(responseError, status=400)
         try:
             new_lang = Languages(
@@ -61,11 +58,6 @@ def getLanguages(request):
         if args:
             if len(args) > 2:
                 raise Exception("Expecting less than 3 arguments")
-            if "language" in args:
-                languages = languages.filter(language=args["language"])
-            if "type" in args and "language" in args:
-                responseError["message"] = "Cannot filter with both arguments `language` and `type`"
-                return response.json(responseError, status=400)
             if "type" in args:
                 languages = languages.filter(type=args["type"])
             if "page" in args and int(args["page"]) > 1:
@@ -81,6 +73,14 @@ def getLanguages(request):
     except Exception as err:
         responseError["message"] = err
         return response.json(responseError, status=400)
+
+
+@api.route("/languages/<id>")
+def getLanguagesById(request, id):
+    try:
+        return response.json(Languages.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
 @api.route("/sentences")
@@ -121,23 +121,22 @@ def saveSentences(request):
     try:
         if request.json:
             postdata = request.json
-            if "text" not in postdata or "language" not in postdata:
+            requiredFields = ["text", "language"]
+            if not set(requiredFields) >= set(postdata):
                 raise AttributeError(
                     "Invalid Payload. Wrong or Missing Attributes")
+            if not isinstance(postdata["text"], str):
+                raise TypeError("<text> field must be a string")
 
-            new_item = Sentences()
-            if "text" in postdata and isinstance(postdata["text"], str):
-                new_item.text = postdata["text"]
-            if "language" in postdata:
-                language = Languages.objects().filter(
-                    language=postdata["language"]).first()
-                if not language:
-                    raise ValueError(
-                        "No language <{}> found".format(postdata["language"]))
-                new_item.lang = language
-                new_item.save()
-                return response.json({"message": "Added One item"})
-
+            new_item = Sentences(text=postdata["text"])
+            language = Languages.objects().filter(
+                language=postdata["language"]).first()
+            if not language:
+                raise ValueError(
+                    "No language <{}> found".format(postdata["language"]))
+            new_item.lang = language
+            new_item.save()
+            return response.json({"message": "Added One item"})
         else:
             raise ValueError("Invalid Payload. No Post Data Found")
     except Exception as err:

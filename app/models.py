@@ -11,6 +11,7 @@ class Languages(Document):
 
     def serialize(self):
         return {
+            "id": str(self.pk),
             "name": self.language,
             "code": self.code,
             "type": self.type,
