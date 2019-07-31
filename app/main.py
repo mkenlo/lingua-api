@@ -26,17 +26,17 @@ def index(request):
 def saveLanguages(request):
     if request.method == "POST":
         postdata = request.json
-        requiredFields = ["language", "code", "type"]
-        if  not set(requiredFields) >= set( postdata):
+        requiredFields = ["language", "code", "type", "default"]
+        if not set(requiredFields) >= set(postdata):
             return response.json(responseError, status=400)
         try:
-            new_lang = Languages(
+            newLang = Languages(
                 language=postdata["language"],
                 code=postdata["code"],
                 type=postdata["type"])
             if "default" in postdata:
-                new_lang.default = postdata["default"]
-            new_lang.save()
+                newLang.default = postdata["default"]
+            newLang.save()
             return response.json({"message": "Added One Item"}, status=201)
         except Exception as err:
             responseError["message"] = str(err)
@@ -117,7 +117,6 @@ def getSentences(request):
 
 @api.route("/sentences", methods=["POST"])
 def saveSentences(request):
-
     try:
         if request.json:
             postdata = request.json
@@ -128,14 +127,14 @@ def saveSentences(request):
             if not isinstance(postdata["text"], str):
                 raise TypeError("<text> field must be a string")
 
-            new_item = Sentences(text=postdata["text"])
+            newSentence = Sentences(text=postdata["text"])
             language = Languages.objects().filter(
                 language=postdata["language"]).first()
             if not language:
                 raise ValueError(
                     "No language <{}> found".format(postdata["language"]))
-            new_item.lang = language
-            new_item.save()
+            newSentence.lang = language
+            newSentence.save()
             return response.json({"message": "Added One item"})
         else:
             raise ValueError("Invalid Payload. No Post Data Found")
@@ -218,8 +217,8 @@ def saveTranslations(request):
         postdata = request.json
         if not postdata:
             raise ValueError("Missing Post Data")
-        valid_input = ["author", "target_lang", "sentence", "audiofile"]
-        if not set(valid_input) >= set(postdata):
+        requiredFields = ["author", "target_lang", "sentence", "audiofile"]
+        if not set(requiredFields) >= set(postdata):
             raise AttributeError("Missing or Wrong Arguments")
         # checking reference fields
         lang = Languages.objects().filter(
