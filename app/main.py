@@ -2,17 +2,19 @@ from sanic import Blueprint
 from sanic import response
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
-from pymongo import MongoClient
-import json
 import logging
-
+from app.models import *
+from math import ceil
+import json
 
 api = Blueprint('api')
 DEFAULT_TOPIC = "audio-recordings"
+ITEMS_PER_PAGE = 20
 
-client = MongoClient('mongodb://localhost:27017/')
 
-my_db = client.linguadb
+responseError = {"message": "Invalid Payload."}
+responseListObjects = {"page": 1, "results": [],
+                       "total_results": 0, "total_pages": 0}
 
 
 @api.route("/")
@@ -20,96 +22,303 @@ def index(request):
     return response.json({"message": "welcome to Lingua API"})
 
 
-@api.route("/languages")
-def get_languages(request):
-    """
-    Return all languages
-    Endpoint example: /languages
-    if query parameters are given, the endpoint will return that specific object
-    Example:  /languages?code=FRA
-    Parameter Name: code
-    """
-    queryfilter = {}
-    if len(request.args) != 0:
-        if "code" not in request.args:
-            return response.json({"message": "invalid query parameters "})
-        else:
-            queryfilter["code"] = request.args["code"][0]
+@api.route("/languages", methods=["POST"])
+def saveLanguages(request):
+    if request.method == "POST":
+        postdata = request.json
+        requiredFields = ["language", "code", "type", "default"]
+        if not set(requiredFields) >= set(postdata):
+            return response.json(responseError, status=400)
+        try:
+            newLang = Languages(
+                language=postdata["language"],
+                code=postdata["code"],
+                type=postdata["type"])
+            if "default" in postdata:
+                newLang.default = postdata["default"]
+            newLang.save()
+            return response.json({"message": "Added One Item"}, status=201)
+        except Exception as err:
+            responseError["message"] = str(err)
+            return response.json(responseError, status=400)
 
-    languages = []
-    for d in my_db.languages.find(queryfilter):
-        d['_id'] = str(d['_id'])
-        languages.append(d)
-    return response.json({"message": "successfull", "data": languages})
+
+@api.route("/languages")
+def getLanguages(request):
+    """
+    Return all Languages objects
+    Parameters in Request body
+    {
+        "page" : (int)  [Optional, default is 1]
+    }
+    """
+    try:
+        languages = Languages.objects()
+        args = request.json
+        if args:
+            if len(args) > 2:
+                raise Exception("Expecting less than 3 arguments")
+            if "type" in args:
+                languages = languages.filter(type=args["type"])
+            if "page" in args and int(args["page"]) > 1:
+                languages = languages.skip(int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = languages.count()
+        responseListObjects["total_pages"] = ceil(
+            languages.count() / ITEMS_PER_PAGE)
+        languages.limit(ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in languages]
+        return response.json(responseListObjects)
+    except Exception as err:
+        responseError["message"] = err
+        return response.json(responseError, status=400)
+
+
+@api.route("/languages/<id>")
+def getLanguagesById(request, id):
+    try:
+        return response.json(Languages.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
 @api.route("/sentences")
-def get_sentences(request):
+def getSentences(request):
     """
-    return all sentences. If a parameter is given, then all sentences from that language
-    are returned
-    Endpoint example: /sentences?lang=fra
-    Query Parameter: (optional) lang 
-    """
-    queryfilter = {}
-    if len(request.args) != 0:
-        if "lang" not in request.args:
-            return response.json({"message": "invalid query parameters "})
-        else:
-            queryfilter["lang"] = request.args["lang"][0]
-    sentences = []
-    for d in my_db.sentences.find(queryfilter):
-        d['_id'] = str(d)
-        sentences.append(d)
-
-    return response.json({"message": "successfull", "data": sentences})
-
-
-@api.route("/sentence", methods=["POST"])
-def add_sentences(request):
-    """add a or multiple new sentences to translate
-    Request Parameters: array of language objects
+    Return all Sentences objects
+    Parameters in Request body
     {
-        "language" : the language in which the sentence is written,
-        "text": sentence to add
+        "page": (int)[Optional, default is 1]
     }
-     @TODO : Some sanity check need to be done on POST DATA
     """
-    req = request.json
-    my_db.sentences.insert_many(req)
-    return response.json({"message": "successfull", "data": req})
+    try:
+        sentences = Sentences.objects()
+        if request.json:
+            if "language" in request.json:
+                language = Languages.objects(
+                    language=request.json["language"]).first()
+                sentences = sentences.filter(lang=language)
+            if "page" in request.json and int(request.json["page"]) > 1:
+                sentences = sentences.skip(
+                    int(request.json["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = request.json["page"]
+
+        responseListObjects["total_results"] = sentences.count()
+        responseListObjects["total_pages"] = ceil(
+            sentences.count() / ITEMS_PER_PAGE)
+        sentences.limit(ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in sentences]
+        return response.json(responseListObjects)
+    except Exception as err:
+        responseError['message'] = str(err)
+        return response.json(responseError, status=400)
 
 
-@api.route("/tracks", methods=["POST"])
-def save_track(request):
+@api.route("/sentences", methods=["POST"])
+def saveSentences(request):
+    try:
+        if request.json:
+            postdata = request.json
+            requiredFields = ["text", "language"]
+            if not set(requiredFields) >= set(postdata):
+                raise AttributeError(
+                    "Invalid Payload. Wrong or Missing Attributes")
+            if not isinstance(postdata["text"], str):
+                raise TypeError("<text> field must be a string")
+
+            newSentence = Sentences(text=postdata["text"])
+            language = Languages.objects().filter(
+                language=postdata["language"]).first()
+            if not language:
+                raise ValueError(
+                    "No language <{}> found".format(postdata["language"]))
+            newSentence.lang = language
+            newSentence.save()
+            return response.json({"message": "Added One item"})
+        else:
+            raise ValueError("Invalid Payload. No Post Data Found")
+    except Exception as err:
+        return response.json(str(err), status=400)
+
+
+@api.route("/sentences/<id>")
+def getSentencesById(request, id):
+    try:
+        return response.json(Sentences.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
+
+
+@api.route("/sentences/<id>/translations")
+def getTranslationsBySentenceId(request, id):
+    try:
+        sentence = Sentences.objects().with_id(id)
+        translations = Translations.objects().filter(sentence=sentence)
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                translations = translations.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = translations.count()
+        responseListObjects["total_pages"] = ceil(
+            translations.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in translations]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
+
+
+@api.route("/translations")
+def getTranslations(request):
+    """"
+    Return all translations objects
+    Parameters in Request body
+    {
+        "page": (int)[Optional, default is 1]
+    }
     """
-        save one or many audio recordings
+    try:
+        translations = Translations.objects()
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                translations = translations.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
 
-        request Parameters: array of recording objects
+        responseListObjects["total_results"] = translations.count()
+        responseListObjects["total_pages"] = ceil(
+            translations.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in translations]
+        return response.json(responseListObjects)
+    except Exception as err:
+        return response.json({"message": str(err)}, status=400)
+
+
+@api.route("/translations", methods=["POST"])
+def saveTranslations(request):
+    """
+    Save a new Translation Document
+    request Parameters:
         {
-            "text": "the sentence to translate",
-            language: {
-                "from": "the language in which the sentence is written",
-                "to": "the language in which the audio file is recorded"
-            },
-            "audioFile: "the translated audio recording of `text`"
+            "sentence":  (string) "ID of the sentence to translate",
+            target_lang: (string) "target language",
+            "audiofile:  (object)
+            {
+                "name":  (string) "audio file name",
+                "content: (bytes or Base64 String) "file content"
+            }
         }
-
-        @TODO : Some sanity check need to be done on POST DATA
     """
-    data = request.body
-    # Calling Kafka Producer
-    kafka_producer(data)
-    res = {"message": "Hello, I got your audio file. Will Process it soon", "data": data}
-    return response.json(res)
+    try:
+        postdata = request.json
+        if not postdata:
+            raise ValueError("Missing Post Data")
+        requiredFields = ["author", "target_lang", "sentence", "audiofile"]
+        if not set(requiredFields) >= set(postdata):
+            raise AttributeError("Missing or Wrong Arguments")
+        # checking reference fields
+        lang = Languages.objects().filter(
+            language=postdata["target_lang"]).first()
+        author = Users.objects().filter(username=postdata["author"]).first()
+        sentence = Sentences.objects().with_id(postdata["sentence"])
+        if not lang or not author or not sentence:
+            raise Exception("One or More items not Found")
+
+        audioFile = File(
+            name=postdata["audiofile"]["name"],
+            # encode the string into bytes
+            content=postdata["audiofile"]["content"].encode())
+        Translations(author=author, targetlang=lang,
+                     sentence=sentence, audiofile=audioFile).save()
+
+        # TODO Call Kafka Producer Here
+        # data to process {audioFile}
+
+        return response.json({"message": "Added One item"})
+    except Exception as err:
+        return response.json({"message": str(err)}, status=400)
 
 
-@api.route("/mytranslations", methods=["POST"])
-def get_user_translations(request):
-    """
-    Return all translations for a given users
-    """
-    return response.json({"message": "200 successfull"})
+@api.route("/translations/<id>")
+def getTranslationsById(request, id):
+    try:
+        return response.json(Translations.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
+
+
+@api.route("/users")
+def getUsers(request):
+    try:
+        users = Users.objects()
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                users = users.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = users.count()
+        responseListObjects["total_pages"] = ceil(
+            users.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in users]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json(responseError, status=400)
+
+
+@api.route("/users", methods=["POST"])
+def saveUsers(request):
+    try:
+        postdata = request.json
+        if not postdata:
+            raise ValueError("Missing Post Data")
+        if "username" not in postdata:
+            raise AttributeError("Missing required <username> field")
+        user = Users(username=postdata["username"])
+        if "fullname" in postdata:
+            user.fullname = postdata["fullname"]
+        if "location" in postdata:
+            user.location = postdata["location"]
+        if "avatar" in postdata:
+            user.avatar = postdata["avatar"]
+        user.save()
+        return response.json({"message": "Added one item"})
+    except Exception as err:
+        return response.json({"message": str(err)}, status=400)
+
+
+@api.route("/users/<id>")
+def getUsersById(request, id):
+    try:
+        return response.json(Users.objects().with_id(id).serialize())
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
+
+
+@api.route("/users/<id>/translations")
+def getTranslationsByUserId(request, id):
+    try:
+        user = Users.objects().with_id(id)
+        translations = Translations.objects().filter(author=user)
+        args = request.json
+        if args:
+            if "page" in args and int(args["page"]) > 1:
+                translations = translations.skip(
+                    int(args["page"])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"]
+
+        responseListObjects["total_results"] = translations.count()
+        responseListObjects["total_pages"] = ceil(
+            translations.count() / ITEMS_PER_PAGE)
+        responseListObjects["results"] = [d.serialize() for d in translations]
+        return response.json(responseListObjects)
+    except Exception:
+        return response.json({"message": "Object Not found"}, status=404)
 
 
 def kafka_producer(data):
