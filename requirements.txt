@@ -4,3 +4,4 @@ pymongo
 mongoengine
 manage.py
 pytest
+pytest-sanic
