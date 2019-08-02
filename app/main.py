@@ -31,7 +31,7 @@ def saveLanguages(request):
             return response.json(responseError, status=400)
         try:
             newLang = Languages(
-                language=postdata["language"],
+                language=postdata["language"].lower(),
                 code=postdata["code"],
                 type=postdata["type"])
             if "default" in postdata:
