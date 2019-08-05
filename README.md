@@ -25,3 +25,6 @@ Want to use virtual environment?
 3. Activate the virtual env with `. venv/bin/activate`
 4. Run your project commands
 5. Deactivate the env with ` desactivate`
+
+## Tests
+run tests with `pytest`

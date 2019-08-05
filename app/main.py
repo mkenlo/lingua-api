@@ -31,7 +31,7 @@ def saveLanguages(request):
             return response.json(responseError, status=400)
         try:
             newLang = Languages(
-                language=postdata["language"],
+                language=postdata["language"].lower(),
                 code=postdata["code"],
                 type=postdata["type"])
             if "default" in postdata:
@@ -70,8 +70,11 @@ def getLanguages(request):
         languages.limit(ITEMS_PER_PAGE)
         responseListObjects["results"] = [d.serialize() for d in languages]
         return response.json(responseListObjects)
+    except ValueError as err:
+        responseError["message"] = "Required Integer, found String"
+        return response.json(responseError, status=400)
     except Exception as err:
-        responseError["message"] = err
+        responseError["message"] = str(err)
         return response.json(responseError, status=400)
 
 

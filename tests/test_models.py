@@ -10,7 +10,7 @@ class TestClassModel(BaseTest):
         lang = Languages(language="russian", code="RUS",
                          type="foreign", default=False)
         lang.save()
-        assert Languages.objects.count() ==1 
+        assert Languages.objects.count() == 1
         assert Languages.objects.first().language == "russian"
         assert isinstance(lang, Languages)
 
@@ -35,7 +35,10 @@ class TestClassModel(BaseTest):
         user = Users.objects().first()
         lang = Languages.objects().first()
         text = Sentences.objects().first()
-        Translations(author=user, targetlang=lang,
-                     sentence=text, filename="myFile.3gp").save()
-        assert Translations.objects.count() == 1
+        Translations(
+            author=user,
+            targetlang=lang,
+            sentence=text,
+            audiofile=File(name="myFile.3gp", content="test".encode())).save()
+        assert Translations.objects().count() == 1
         assert Translations.objects().first().author.username == "testy"

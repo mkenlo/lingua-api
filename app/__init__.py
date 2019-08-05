@@ -11,6 +11,6 @@ def create_app(config_name="default"):
     app.blueprint(api)
 
     app.config.from_object(config[config_name])
-    connect(db=os.environ["DEV_DATABASE_URL"])
+    connect(db=config[config_name].DATABASE_URI)
 
     return app
