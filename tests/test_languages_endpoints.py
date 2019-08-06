@@ -83,3 +83,37 @@ async def test_getLanguages_with_validTypeLanguage_shouldPass(test_cli, generate
     assert resp_json["total_results"] == 2
     assert len(resp_json["results"]) == 2
     assert resp_json["results"][0]["type"] == "foreign"
+
+
+async def test_addLanguages_with_noParam_shouldFail(test_cli):
+    resp = await test_cli.post('/languages')
+    resp_json = await resp.json()
+    assert resp_json["message"] == "Invalid Payload."
+    assert resp.status == 400
+
+
+async def test_addLanguages_with_unexpectedParam_shouldFail(test_cli):
+    params = {"invalid_field": 2, "language": "dummy"}
+    resp = await test_cli.post('/languages', data=json.dumps(params))
+    resp_json = await resp.json()
+    assert resp.status == 400
+    assert resp_json["message"] == "Invalid Payload."
+
+
+async def test_addLanguages_with_invalidParam_shouldFail(test_cli):
+    params = {"language": "dummy_test", "code": "DUMMY", "type": 9}
+    resp = await test_cli.post('/languages', data=json.dumps(params))
+    resp_json = await resp.json()
+    assert resp.status == 400
+    assert resp_json["message"] == "Invalid Field Name or Value"
+
+
+async def test_addLanguages_with_validParam_shouldPass(test_cli):
+    params = {"language": "dummy_test", "code": "DUM", "type": "local"}
+    resp = await test_cli.post('/languages', data=json.dumps(params))
+    resp_json = await resp.json()
+    assert resp.status == 201
+    assert resp_json["message"] == "Added One Item"
+    assert Languages.objects().first().language == "dummy_test"
+    assert Languages.objects().first().code == "DUM"
+    removeCollections()

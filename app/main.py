@@ -24,23 +24,24 @@ def index(request):
 
 @api.route("/languages", methods=["POST"])
 def saveLanguages(request):
-    if request.method == "POST":
-        postdata = request.json
-        requiredFields = ["language", "code", "type", "default"]
-        if not set(requiredFields) >= set(postdata):
-            return response.json(responseError, status=400)
-        try:
-            newLang = Languages(
-                language=postdata["language"].lower(),
-                code=postdata["code"],
-                type=postdata["type"])
-            if "default" in postdata:
-                newLang.default = postdata["default"]
-            newLang.save()
-            return response.json({"message": "Added One Item"}, status=201)
-        except Exception as err:
-            responseError["message"] = str(err)
-            return response.json(responseError, status=400)
+    postdata = request.json
+    requiredFields = ["language", "code", "type", "default"]
+    if not postdata or not set(requiredFields) >= set(postdata):
+        return response.json({"message": "Invalid Payload."}, status=400)
+    try:
+        newLang = Languages(
+            language=postdata["language"].lower(),
+            code=postdata["code"].upper(),
+            type=postdata["type"])
+        if "default" in postdata:
+            newLang.default = postdata["default"]
+        newLang.save()
+        return response.json({"message": "Added One Item"}, status=201)
+
+    except ValidationError as err:
+        return response.json({"message": "Invalid Field Name or Value"}, status=400)
+    except Exception as err:
+        return response.json({"message": "Invalid Payload."}, status=400)
 
 
 @api.route("/languages")
@@ -59,7 +60,7 @@ def getLanguages(request):
             if len(args) > 2:
                 raise Exception("Expecting less than 3 arguments")
             if "type" in args:
-                languages = languages.filter(type=args["type"])
+                languages = languages.filter(type=args["type"].lower())
             if "page" in args and int(args["page"]) > 1:
                 languages = languages.skip(int(args["page"])*ITEMS_PER_PAGE)
                 responseListObjects["page"] = args["page"]
@@ -100,7 +101,7 @@ def getSentences(request):
         if request.json:
             if "language" in request.json:
                 language = Languages.objects(
-                    language=request.json["language"]).first()
+                    language=request.json["language"].lower()).first()
                 sentences = sentences.filter(lang=language)
             if "page" in request.json and int(request.json["page"]) > 1:
                 sentences = sentences.skip(
