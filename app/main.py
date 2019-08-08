@@ -272,7 +272,7 @@ def getUsers(request):
         responseListObjects["results"] = [d.serialize() for d in users]
         return response.json(responseListObjects)
     except Exception:
-        return response.json(responseError, status=400)
+        return response.json({"message": "Invalid Payload."}, status=400)
 
 
 @api.route("/users", methods=["POST"])
