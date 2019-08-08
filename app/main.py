@@ -94,6 +94,7 @@ def getSentences(request):
     Parameters in Request body
     {
         "page": (int)[Optional, default is 1]
+        "language":(str)[Optional]
     }
     """
     try:
@@ -114,6 +115,9 @@ def getSentences(request):
         sentences.limit(ITEMS_PER_PAGE)
         responseListObjects["results"] = [d.serialize() for d in sentences]
         return response.json(responseListObjects)
+    except ValueError as err:
+        responseError["message"] = "Required Integer, found String"
+        return response.json(responseError, status=400)
     except Exception as err:
         responseError['message'] = str(err)
         return response.json(responseError, status=400)
@@ -126,8 +130,7 @@ def saveSentences(request):
             postdata = request.json
             requiredFields = ["text", "language"]
             if not set(requiredFields) >= set(postdata):
-                raise AttributeError(
-                    "Invalid Payload. Wrong or Missing Attributes")
+                raise AttributeError("Invalid Payload.")
             if not isinstance(postdata["text"], str):
                 raise TypeError("<text> field must be a string")
 
@@ -139,11 +142,13 @@ def saveSentences(request):
                     "No language <{}> found".format(postdata["language"]))
             newSentence.lang = language
             newSentence.save()
-            return response.json({"message": "Added One item"})
+            return response.json({"message": "Added One Item"}, status=201)
         else:
-            raise ValueError("Invalid Payload. No Post Data Found")
+            raise Exception("Invalid Payload.")
+    except ValueError as err:
+        return response.json({"message": str(err)}, status=404)
     except Exception as err:
-        return response.json(str(err), status=400)
+        return response.json({"message": str(err)}, status=400)
 
 
 @api.route("/sentences/<id>")
@@ -242,7 +247,7 @@ def saveTranslations(request):
         # TODO Call Kafka Producer Here
         # data to process {audioFile}
 
-        return response.json({"message": "Added One item"})
+        return response.json({"message": "Added One Item"})
     except Exception as err:
         return response.json({"message": str(err)}, status=400)
 
