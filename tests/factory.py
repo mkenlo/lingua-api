@@ -8,6 +8,8 @@ sys.path.append("..")
 def removeCollections():
     Languages.drop_collection()
     Sentences.drop_collection()
+    Translations.drop_collection()
+    Users.drop_collection()
 
 
 def insertDummyLanguages():
@@ -20,14 +22,20 @@ def insertDummyLanguages():
 
 def insertDummySentences():
     insertDummyLanguages()
-    lang_fr = Languages.objects(language="francais").first()
-    lang_en = Languages.objects(language="english").first()
-    lang = lang_fr
+    lang = dict()
+    lang["francais"] = Languages.objects(language="francais").first()
+    lang["english"] = Languages.objects(language="english").first()
     with open('db/dummy/sentences.json') as f:
         data = json.load(f)
         for entry in data:
-            if entry["language"] == "francais":
-                lang = lang_fr
-            if entry["language"] == "english":
-                lang = lang_en
-            Sentences(lang=lang, text=entry["text"]).save()
+            Sentences(lang=lang[entry["language"]], text=entry["text"]).save()
+
+
+def insertDummyUsers():
+    with open('db/dummy/users.json') as f:
+        data = json.load(f)
+        for entry in data:
+            Users(username=entry["username"],
+                  fullname=entry["fullname"],
+                  location=entry["location"],
+                  avatar=entry["avatar"]).save()

@@ -203,6 +203,10 @@ def getTranslations(request):
             translations.count() / ITEMS_PER_PAGE)
         responseListObjects["results"] = [d.serialize() for d in translations]
         return response.json(responseListObjects)
+
+    except ValueError as err:
+        responseError["message"] = "Required Integer, found String"
+        return response.json(responseError, status=400)
     except Exception as err:
         return response.json({"message": str(err)}, status=400)
 
@@ -225,11 +229,11 @@ def saveTranslations(request):
     try:
         postdata = request.json
         if not postdata:
-            raise ValueError("Missing Post Data")
+            raise ValueError("Invalid Payload.")
         requiredFields = ["author", "target_lang", "sentence", "audiofile"]
         if not set(requiredFields) >= set(postdata):
             raise AttributeError("Missing or Wrong Arguments")
-        # checking reference fields
+        # checking reference fieldMissing or Wrong Argumentss
         lang = Languages.objects().filter(
             language=postdata["target_lang"]).first()
         author = Users.objects().filter(username=postdata["author"]).first()

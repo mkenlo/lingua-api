@@ -7,6 +7,11 @@ import sys
 sys.path.append("..")
 
 
+NUM_TOTAL_SENTENCES = 10
+NUM_SENTENCES_OF_LANG_FRANCAIS = 6
+FIRST_SENTENCE_LANG = "francais"
+
+
 @pytest.yield_fixture
 def app():
     app = create_app("testing")
@@ -32,10 +37,10 @@ def generateData(request):
 async def test_getSentences_with_noParam_shouldPass(test_cli, generateData):
     resp = await test_cli.get('/sentences')
     resp_json = await resp.json()
-    assert resp_json["total_results"] == 10
-    assert len(resp_json["results"]) == 10
+    assert resp_json["total_results"] == NUM_TOTAL_SENTENCES
+    assert len(resp_json["results"]) == NUM_TOTAL_SENTENCES
     assert resp_json["page"] == 1
-    assert resp_json["results"][0]["language"]["name"] == "francais"
+    assert resp_json["results"][0]["language"]["name"] == FIRST_SENTENCE_LANG
     assert resp.status == 200
 
 
@@ -51,7 +56,7 @@ async def test_getSentences_with_bothExpectedParam_shouldPass(test_cli, generate
     resp = await test_cli.get('/sentences', data=json.dumps(params))
     resp_json = await resp.json()
     assert resp.status == 200
-    assert resp_json["total_results"] == 6
+    assert resp_json["total_results"] == NUM_SENTENCES_OF_LANG_FRANCAIS
     assert len(resp_json["results"]) == 0
     assert resp_json["page"] == 2
 
@@ -61,7 +66,7 @@ async def test_getSentences_with_validPageNum_shouldPass(test_cli, generateData)
     resp = await test_cli.get('/sentences', data=json.dumps(params))
     resp_json = await resp.json()
     assert resp.status == 200
-    assert resp_json["total_results"] == 10
+    assert resp_json["total_results"] == NUM_TOTAL_SENTENCES
     assert len(resp_json["results"]) == 0
     assert resp_json["page"] == 20
 
@@ -81,7 +86,7 @@ async def test_getSentences_with_validLanguage_shouldPass(test_cli, generateData
     assert resp.status == 200
     assert resp_json["total_results"] == 6
     assert len(resp_json["results"]) == 6
-    assert resp_json["results"][0]["language"]["name"] == "francais"
+    assert resp_json["results"][0]["language"]["name"] == FIRST_SENTENCE_LANG
 
 
 async def test_addSentences_with_noParam_shouldFail(test_cli):
