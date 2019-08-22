@@ -4,6 +4,7 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaError
 import logging
 from app.models import *
+from app.utils import validate_translations_input
 from math import ceil
 import json
 
@@ -227,31 +228,22 @@ def saveTranslations(request):
         }
     """
     try:
-        postdata = request.json
-        if not postdata:
-            raise ValueError("Invalid Payload.")
-        requiredFields = ["author", "target_lang", "sentence", "audiofile"]
-        if not set(requiredFields) >= set(postdata):
-            raise AttributeError("Missing or Wrong Arguments")
-        # checking reference fieldMissing or Wrong Argumentss
-        lang = Languages.objects().filter(
-            language=postdata["target_lang"]).first()
-        author = Users.objects().filter(username=postdata["author"]).first()
-        sentence = Sentences.objects().with_id(postdata["sentence"])
-        if not lang or not author or not sentence:
-            raise Exception("One or More items not Found")
-
+        postdata = validate_translations_input(request.json)
         audioFile = File(
             name=postdata["audiofile"]["name"],
             # encode the string into bytes
             content=postdata["audiofile"]["content"].encode())
-        Translations(author=author, targetlang=lang,
-                     sentence=sentence, audiofile=audioFile).save()
+        Translations(
+            author=postdata["author"],
+            targetlang=postdata["target_lang"],
+            sentence=postdata["sentence"],
+            audiofile=audioFile).save()
 
         # TODO Call Kafka Producer Here
         # data to process {audioFile}
 
         return response.json({"message": "Added One Item"})
+
     except Exception as err:
         return response.json({"message": str(err)}, status=400)
 

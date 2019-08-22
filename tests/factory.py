@@ -39,3 +39,18 @@ def insertDummyUsers():
                   fullname=entry["fullname"],
                   location=entry["location"],
                   avatar=entry["avatar"]).save()
+
+
+def insertDummyTranslations():
+    insertDummySentences()
+    john_doe = Users(username="jdoe", fullname="john doe",
+                     location="test", avatar="https://lorem.org/ipsum.jpg")
+    john_doe.save()
+    text = Sentences.objects().first()
+    lang = Languages.objects(type="local").first()
+    audiofiles = ["consectetuer.mov",
+                  "faucibusOrciLuctus.avi", "dolor.mp3"]
+    for f in audiofiles:
+        file = File(name=f, content=f.encode())
+        Translations(author=john_doe, targetlang=lang,
+                     sentence=text, audiofile=file).save()
