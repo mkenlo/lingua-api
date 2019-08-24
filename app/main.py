@@ -62,6 +62,7 @@ def getLanguages(request):
                 raise Exception("Expecting less than 3 arguments")
             if "type" in args:
                 languages = languages.filter(type=args["type"].lower())
+            responseListObjects["page"] = 1
             if "page" in args and int(args["page"]) > 1:
                 languages = languages.skip(int(args["page"])*ITEMS_PER_PAGE)
                 responseListObjects["page"] = args["page"]
@@ -105,6 +106,7 @@ def getSentences(request):
                 language = Languages.objects(
                     language=request.json["language"].lower()).first()
                 sentences = sentences.filter(lang=language)
+            responseListObjects["page"] = 1
             if "page" in request.json and int(request.json["page"]) > 1:
                 sentences = sentences.skip(
                     int(request.json["page"])*ITEMS_PER_PAGE)
@@ -167,6 +169,7 @@ def getTranslationsBySentenceId(request, id):
         translations = Translations.objects().filter(sentence=sentence)
         args = request.json
         if args:
+            responseListObjects["page"] = 1
             if "page" in args and int(args["page"]) > 1:
                 translations = translations.skip(
                     int(args["page"])*ITEMS_PER_PAGE)
@@ -194,6 +197,7 @@ def getTranslations(request):
         translations = Translations.objects()
         args = request.json
         if args:
+            responseListObjects["page"] = 1
             if "page" in args and int(args["page"]) > 1:
                 translations = translations.skip(
                     int(args["page"])*ITEMS_PER_PAGE)
@@ -292,7 +296,7 @@ def saveUsers(request):
         if "avatar" in postdata:
             user.avatar = postdata["avatar"]
         user.save()
-        return response.json({"message": "Added one item"})
+        return response.json({"message": "Added One Item"})
     except Exception as err:
         return response.json({"message": str(err)}, status=400)
 

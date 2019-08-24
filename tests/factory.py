@@ -21,7 +21,6 @@ def insertDummyLanguages():
 
 
 def insertDummySentences():
-    insertDummyLanguages()
     lang = dict()
     lang["francais"] = Languages.objects(language="francais").first()
     lang["english"] = Languages.objects(language="english").first()
@@ -42,15 +41,12 @@ def insertDummyUsers():
 
 
 def insertDummyTranslations():
-    insertDummySentences()
-    john_doe = Users(username="jdoe", fullname="john doe",
-                     location="test", avatar="https://lorem.org/ipsum.jpg")
-    john_doe.save()
+    user = Users.objects.first()
     text = Sentences.objects().first()
     lang = Languages.objects(type="local").first()
     audiofiles = ["consectetuer.mov",
                   "faucibusOrciLuctus.avi", "dolor.mp3"]
     for f in audiofiles:
         file = File(name=f, content=f.encode())
-        Translations(author=john_doe, targetlang=lang,
+        Translations(author=user, targetlang=lang,
                      sentence=text, audiofile=file).save()
