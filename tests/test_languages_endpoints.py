@@ -19,7 +19,7 @@ def test_cli(loop, app, sanic_client):
 
 
 @pytest.fixture
-def generateData(request):
+def preFillDB(request):
     # adding 5 Language documents
     insertDummyLanguages()
 
@@ -29,7 +29,7 @@ def generateData(request):
     request.addfinalizer(fin)
 
 
-async def test_getLanguages_with_noParam_shouldPass(test_cli, generateData):
+async def test_getLanguages_with_noParam_shouldPass(test_cli, preFillDB):
     resp = await test_cli.get('/languages')
     resp_json = await resp.json()
     assert resp_json["total_results"] == 5
@@ -39,7 +39,7 @@ async def test_getLanguages_with_noParam_shouldPass(test_cli, generateData):
     assert resp.status == 200
 
 
-async def test_getLanguages_with_moreThanExpectedParam_shouldFail(test_cli, generateData):
+async def test_getLanguages_with_moreThanExpectedParam_shouldFail(test_cli, preFillDB):
     params = {'page': 2, 'type': 'local', 'not_valid_param': 50}
     resp = await test_cli.get('/languages', data=json.dumps(params))
     resp_json = await resp.json()
@@ -47,7 +47,7 @@ async def test_getLanguages_with_moreThanExpectedParam_shouldFail(test_cli, gene
     assert resp.status == 400
 
 
-async def test_getLanguages_with_bothExpectedParam_shouldPass(test_cli, generateData):
+async def test_getLanguages_with_bothExpectedParam_shouldPass(test_cli, preFillDB):
     params = {'page': 2, 'type': 'local'}
     resp = await test_cli.get('/languages', data=json.dumps(params))
     resp_json = await resp.json()
@@ -57,7 +57,7 @@ async def test_getLanguages_with_bothExpectedParam_shouldPass(test_cli, generate
     assert resp_json["page"] == 2
 
 
-async def test_getLanguages_with_validPageNum_shouldPass(test_cli, generateData):
+async def test_getLanguages_with_validPageNum_shouldPass(test_cli, preFillDB):
     params = {'page': 20}
     resp = await test_cli.get('/languages', data=json.dumps(params))
     resp_json = await resp.json()
@@ -67,7 +67,7 @@ async def test_getLanguages_with_validPageNum_shouldPass(test_cli, generateData)
     assert resp_json["page"] == 20
 
 
-async def test_getLanguages_with_invalidPageNum_shouldFail(test_cli, generateData):
+async def test_getLanguages_with_invalidPageNum_shouldFail(test_cli, preFillDB):
     params = {'page': "test"}
     resp = await test_cli.get('/languages', data=json.dumps(params))
     resp_json = await resp.json()
@@ -75,7 +75,7 @@ async def test_getLanguages_with_invalidPageNum_shouldFail(test_cli, generateDat
     assert resp.status == 400
 
 
-async def test_getLanguages_with_validTypeLanguage_shouldPass(test_cli, generateData):
+async def test_getLanguages_with_validTypeLanguage_shouldPass(test_cli, preFillDB):
     params = {'type': "foreign"}
     resp = await test_cli.get('/languages', data=json.dumps(params))
     resp_json = await resp.json()

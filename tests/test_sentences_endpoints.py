@@ -1,6 +1,6 @@
 import pytest
 import json
-from .factory import insertDummySentences, removeCollections
+from .factory import insertDummyLanguages, insertDummySentences, removeCollections
 from app import create_app
 from app.models import *
 import sys
@@ -24,8 +24,8 @@ def test_cli(loop, app, sanic_client):
 
 
 @pytest.fixture
-def generateData(request):
-    # adding dummy sentences
+def preFillDB(request):
+    insertDummyLanguages()
     insertDummySentences()
 
     def fin():
@@ -34,7 +34,7 @@ def generateData(request):
     request.addfinalizer(fin)
 
 
-async def test_getSentences_with_noParam_shouldPass(test_cli, generateData):
+async def test_getSentences_with_noParam_shouldPass(test_cli, preFillDB):
     resp = await test_cli.get('/sentences')
     resp_json = await resp.json()
     assert resp_json["total_results"] == NUM_TOTAL_SENTENCES
@@ -44,14 +44,14 @@ async def test_getSentences_with_noParam_shouldPass(test_cli, generateData):
     assert resp.status == 200
 
 
-async def test_getSentencesById_with_unKnownID_shouldFailed(test_cli, generateData):
+async def test_getSentencesById_with_unKnownID_shouldFailed(test_cli, preFillDB):
     resp = await test_cli.get('/sentences/veryunknown')
     resp_json = await resp.json()
     assert resp.status == 404
     assert resp_json["message"] == "Object Not found"
 
 
-async def test_getSentences_with_bothExpectedParam_shouldPass(test_cli, generateData):
+async def test_getSentences_with_bothExpectedParam_shouldPass(test_cli, preFillDB):
     params = {'page': 2, 'language': 'francais'}
     resp = await test_cli.get('/sentences', data=json.dumps(params))
     resp_json = await resp.json()
@@ -61,7 +61,7 @@ async def test_getSentences_with_bothExpectedParam_shouldPass(test_cli, generate
     assert resp_json["page"] == 2
 
 
-async def test_getSentences_with_validPageNum_shouldPass(test_cli, generateData):
+async def test_getSentences_with_validPageNum_shouldPass(test_cli, preFillDB):
     params = {'page': 20}
     resp = await test_cli.get('/sentences', data=json.dumps(params))
     resp_json = await resp.json()
@@ -71,7 +71,7 @@ async def test_getSentences_with_validPageNum_shouldPass(test_cli, generateData)
     assert resp_json["page"] == 20
 
 
-async def test_getSentences_with_invalidPageNum_shouldFail(test_cli, generateData):
+async def test_getSentences_with_invalidPageNum_shouldFail(test_cli, preFillDB):
     params = {'page': "test"}
     resp = await test_cli.get('/sentences', data=json.dumps(params))
     resp_json = await resp.json()
@@ -79,7 +79,7 @@ async def test_getSentences_with_invalidPageNum_shouldFail(test_cli, generateDat
     assert resp.status == 400
 
 
-async def test_getSentences_with_validLanguage_shouldPass(test_cli, generateData):
+async def test_getSentences_with_validLanguage_shouldPass(test_cli, preFillDB):
     params = {'language': "francais"}
     resp = await test_cli.get('/sentences', data=json.dumps(params))
     resp_json = await resp.json()
