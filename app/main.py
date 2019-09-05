@@ -6,7 +6,6 @@ import logging
 from app.models import *
 from app.utils import validate_translations_input
 from math import ceil
-import json
 
 api = Blueprint('api')
 DEFAULT_TOPIC = "audio-recordings"
@@ -49,23 +48,22 @@ def saveLanguages(request):
 def getLanguages(request):
     """
     Return all Languages objects
-    Parameters in Request body
+    Parameters  in query string
     {
-        "page" : (int)  [Optional, default is 1]
+        "page" : (int)  [Optional, default is 1],
+        "type" : (string) [optional]
     }
     """
     try:
         languages = Languages.objects()
-        args = request.json
-        if args:
-            if len(args) > 2:
-                raise Exception("Expecting less than 3 arguments")
+        args = request.get_args()
+        if len(args) > 0:
             if "type" in args:
-                languages = languages.filter(type=args["type"].lower())
+                languages = languages.filter(type=args["type"][0].lower())
             responseListObjects["page"] = 1
-            if "page" in args and int(args["page"]) > 1:
-                languages = languages.skip(int(args["page"])*ITEMS_PER_PAGE)
-                responseListObjects["page"] = args["page"]
+            if "page" in args and int(args["page"][0]) > 1:
+                languages = languages.skip(int(args["page"][0])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"][0]
 
         responseListObjects["total_results"] = languages.count()
         responseListObjects["total_pages"] = ceil(
@@ -93,7 +91,7 @@ def getLanguagesById(request, id):
 def getSentences(request):
     """
     Return all Sentences objects
-    Parameters in Request body
+    Parameters in query string
     {
         "page": (int)[Optional, default is 1]
         "language":(str)[Optional]
@@ -101,16 +99,17 @@ def getSentences(request):
     """
     try:
         sentences = Sentences.objects()
-        if request.json:
-            if "language" in request.json:
+        args = request.get_args()
+        if len(args) > 0:
+            if "language" in args:
                 language = Languages.objects(
-                    language=request.json["language"].lower()).first()
+                    language=args["language"][0].lower()).first()
                 sentences = sentences.filter(lang=language)
             responseListObjects["page"] = 1
-            if "page" in request.json and int(request.json["page"]) > 1:
+            if "page" in args and int(args["page"][0]) > 1:
                 sentences = sentences.skip(
-                    int(request.json["page"])*ITEMS_PER_PAGE)
-                responseListObjects["page"] = request.json["page"]
+                    int(args["page"][0])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"][0]
 
         responseListObjects["total_results"] = sentences.count()
         responseListObjects["total_pages"] = ceil(
@@ -167,13 +166,13 @@ def getTranslationsBySentenceId(request, id):
     try:
         sentence = Sentences.objects().with_id(id)
         translations = Translations.objects().filter(sentence=sentence)
-        args = request.json
-        if args:
+        args = request.get_args()
+        if len(args) > 0:
             responseListObjects["page"] = 1
-            if "page" in args and int(args["page"]) > 1:
+            if "page" in args and int(args["page"][0]) > 1:
                 translations = translations.skip(
-                    int(args["page"])*ITEMS_PER_PAGE)
-                responseListObjects["page"] = args["page"]
+                    int(args["page"][0])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"][0]
 
         responseListObjects["total_results"] = translations.count()
         responseListObjects["total_pages"] = ceil(
@@ -188,20 +187,20 @@ def getTranslationsBySentenceId(request, id):
 def getTranslations(request):
     """"
     Return all translations objects
-    Parameters in Request body
+    Parameters in Query String
     {
         "page": (int)[Optional, default is 1]
     }
     """
     try:
         translations = Translations.objects()
-        args = request.json
-        if args:
+        args = request.get_args()
+        if len(args) > 0:
             responseListObjects["page"] = 1
-            if "page" in args and int(args["page"]) > 1:
+            if "page" in args and int(args["page"][0]) > 1:
                 translations = translations.skip(
-                    int(args["page"])*ITEMS_PER_PAGE)
-                responseListObjects["page"] = args["page"]
+                    int(args["page"][0])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"][0]
 
         responseListObjects["total_results"] = translations.count()
         responseListObjects["total_pages"] = ceil(
@@ -264,12 +263,12 @@ def getTranslationsById(request, id):
 def getUsers(request):
     try:
         users = Users.objects()
-        args = request.json
-        if args:
-            if "page" in args and int(args["page"]) > 1:
+        args = request.get_args()
+        if len(args) > 0:
+            if "page" in args and int(args["page"][0]) > 1:
                 users = users.skip(
-                    int(args["page"])*ITEMS_PER_PAGE)
-                responseListObjects["page"] = args["page"]
+                    int(args["page"][0])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"][0]
 
         responseListObjects["total_results"] = users.count()
         responseListObjects["total_pages"] = ceil(
@@ -314,12 +313,12 @@ def getTranslationsByUserId(request, id):
     try:
         user = Users.objects().with_id(id)
         translations = Translations.objects().filter(author=user)
-        args = request.json
-        if args:
-            if "page" in args and int(args["page"]) > 1:
+        args = request.get_args()
+        if len(args) > 0:
+            if "page" in args and int(args["page"][0]) > 1:
                 translations = translations.skip(
-                    int(args["page"])*ITEMS_PER_PAGE)
-                responseListObjects["page"] = args["page"]
+                    int(args["page"][0])*ITEMS_PER_PAGE)
+                responseListObjects["page"] = args["page"][0]
 
         responseListObjects["total_results"] = translations.count()
         responseListObjects["total_pages"] = ceil(
