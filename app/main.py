@@ -287,6 +287,8 @@ def saveUsers(request):
             raise ValueError("Missing Post Data")
         if "username" not in postdata:
             raise AttributeError("Missing required <username> field")
+        if Users.objects().filter(username=postdata['username']).first():
+            return response.json({"message": "Existing User"})
         user = Users(username=postdata["username"])
         if "fullname" in postdata:
             user.fullname = postdata["fullname"]
