@@ -9,7 +9,7 @@ def validate_translations_input(input):
         raise AttributeError("Missing or Wrong Arguments")
     # checking reference fieldMissing or Wrong Argumentss
     lang = Languages.objects().filter(
-        language=input["target_lang"]).first()
+        language=input["target_lang"].lower()).first()
     author = Users.objects().filter(username=input["author"]).first()
     sentence = Sentences.objects().with_id(input["sentence"])
     if not lang:
