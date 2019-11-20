@@ -6,6 +6,7 @@ import logging
 from app.models import *
 from app.utils import validate_translations_input
 from math import ceil
+import datetime
 
 api = Blueprint('api')
 DEFAULT_TOPIC = "audio-recordings"
@@ -288,8 +289,9 @@ def saveUsers(request):
             raise ValueError("Missing Post Data")
         if "username" not in postdata:
             raise AttributeError("Missing required <username> field")
-        find_user = Users.objects().filter(username=postdata['username']).first()
-        if  find_user:
+        find_user = Users.objects().filter(
+            username=postdata['username']).first()
+        if find_user:
             return response.json({"message": "Existing User", "result": find_user.serialize()})
         user = Users(username=postdata["username"])
         if "fullname" in postdata:
