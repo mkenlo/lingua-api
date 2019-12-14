@@ -14,9 +14,8 @@ This is a small API written in python
 - To drop DB, run `manage dropDB`
 
 ## To run
-0. Run Script to create DATABASES  `.\db/create.sh`
-1. Create virtual environment and activate it and then `pip install -r requirements.txt`.
-2. To launch the server run the command: `python run.py`
+0. Create virtual environment and activate it and then `pip install -r requirements.txt`.
+1. To launch the server run the command: `python run.py`
 
 ## Using Environment Variables ?
 Want to use virtual environment?
