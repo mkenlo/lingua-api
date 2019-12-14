@@ -4,3 +4,5 @@ env
 __pycache__
 app/__pycache__
 .pytest_cache
+.dockerfile.swp
+.Dockerfile.swp
