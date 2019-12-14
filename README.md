@@ -12,8 +12,8 @@ This is a small API written in python
 - Make sure you have [MongoDB] running.
 
 ## To run
-1. Build docker image : `docker build -t my_sanic .`
-2. Run with the correct environment variables passed in: `docker run  -p 8080:8080 -e "DB_NAME=test"testdb`
+1. Build docker image : `docker build -t my_app .`
+2. Run with the correct environment variables passed in: `docker run  -p 8080:8080 -e "DB_NAME=test"testdb my_app`
  
 
 ## Tests
