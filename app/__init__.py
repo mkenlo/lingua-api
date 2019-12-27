@@ -12,6 +12,7 @@ def create_app(config_name="default"):
 
     app.config.from_object(config[config_name])
     app_config = config[config_name]
-    connect(db=app_config.DB_NAME, username=app_config.DB_USER, password=app_config.DB_PASSWORD, DB_HOST = app_config.DB_HOST)
+    connect(db=app_config.DB_NAME, username=app_config.DB_USER, password=app_config.DB_PASSWORD, host = app_config.DB_HOST,
+    port = app_config.DB_PORT)
 
     return app

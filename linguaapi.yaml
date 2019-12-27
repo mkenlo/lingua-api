@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  labels:
+    name: api
+  name: linguaapi
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: linguaapi
+    spec:
+      containers:
+      - image: docker.io/evindj/lingua
+        name: linguaapi
+        ports:
+        - name: lingua
+          containerPort: 9080
+          hostPort: 9080
+        env:
+          - name: DB_HOST
+            value: "192.168.99.100"

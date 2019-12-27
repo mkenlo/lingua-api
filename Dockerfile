@@ -6,4 +6,4 @@ RUN pip3 install -r requirements.txt
 
 CMD ["./entrypoint.sh"]
 
-EXPOSE 8080:8080
+EXPOSE 9080:9080
