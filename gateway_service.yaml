@@ -1,0 +1,26 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: lingua-gateway-service
+spec:
+  hosts: 
+  - "lingua.core"
+  gateways: 
+  - "lingua-gateway"
+  http: 
+  - match:
+    - uri:
+       prefix: /lingua
+    route: 
+    - destination:
+        port:
+          number: 9080
+        host: linguaapi
+  - match:
+    - uri:
+       prefix: /db
+    route: 
+    - destination:
+        port:
+          number: 27017
+        host: mongo
