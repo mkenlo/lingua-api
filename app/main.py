@@ -315,10 +315,10 @@ def getUsersById(request, id):
         return response.json({"message": "Object Not found"}, status=404)
 
 
-@api.route("/users/<id>/translations")
-def getTranslationsByUserId(request, id):
+@api.route("/users/<username>/translations")
+def getTranslationsByUser(request, username):
     try:
-        user = Users.objects().with_id(id)
+        user = Users.objects().filter(username=username).first()
         translations = Translations.objects().filter(author=user)
         args = request.get_args()
         if len(args) > 0:
