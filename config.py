@@ -10,9 +10,7 @@ class Config:
     DB_USER = os.environ.get('DB_USER') or None
     DB_PASSWORD = os.environ.get('DB_PASSWORD') or None
     DB_HOST = os.environ.get('DB_HOST') or "localhost"
-    DB_PORT =  os.environ.get('DB_PORT') or 31000
-    
-
+    DB_PORT =  os.environ.get('DB_PORT') or 27017
 
 config = {
     'default': Config,

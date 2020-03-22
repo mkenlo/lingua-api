@@ -23,6 +23,6 @@ spec:
               mountPath: /data/db
       volumes:
         - name: mongo-persistent-storage
-          hostPath:
-              path: /extra/data
-              type: DirectoryOrCreate
+          gcePersistentDisk:
+              pdName: db-disk 
+              fsType: ext4
