@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "34.107.231.89"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: linguaapi
+          servicePort: 9080
+      - path: /db
+        backend:
+          serviceName: mongo
+          servicePort: 27017
