@@ -12,7 +12,7 @@ spec:
         name: linguaapi
     spec:
       containers:
-      - image: docker.io/evindj/lingua
+      - image: gcr.io/groundtruthbackend/backend
         name: linguaapi
         ports:
         - name: lingua
@@ -20,4 +20,4 @@ spec:
           hostPort: 9080
         env:
           - name: DB_HOST
-            value: "192.168.99.100"
+            value: "mongoservice.default.svc.cluster.local"

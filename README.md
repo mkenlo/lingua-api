@@ -28,3 +28,7 @@ run tests with `pytest`
 5. launch istio gateway `kubectl apply -f gateway.yaml`
 6. launch istio virtual service `kubectl apply -f gateway_service.yaml`
 7. access the service with `$(minikube ip)`
+
+After changing code, run the following:
+docker build -t gcr.io/groundtruthbackend/backend .
+docker push gcr.io/groundtruthbackend/backend

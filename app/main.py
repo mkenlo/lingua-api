@@ -46,6 +46,7 @@ def saveLanguages(request):
 
 @api.route("/languages")
 def getLanguages(request):
+    logging.info("got in Languages Method call")
     """
     Return all Languages objects
     Parameters  in query string
