@@ -1,5 +1,5 @@
 from mongoengine import *
-import os
+import datetime
 
 
 class Languages(Document):
@@ -56,6 +56,7 @@ class Translations(Document):
     targetlang = ReferenceField(Languages)
     sentence = ReferenceField(Sentences)
     audiofile = EmbeddedDocumentField(File)
+    recordeddate = DateTimeField(default=datetime.datetime.utcnow)
 
     def serialize(self):
         return {
@@ -65,5 +66,6 @@ class Translations(Document):
                 "from": self.sentence.lang.language,
                 "to": self.targetlang.language},
             "sentence": self.sentence.text,
-            "audiofile": self.audiofile.name
+            "audiofile": self.audiofile.name,
+            "recordeddate": self.recordeddate.strftime("%b %d, %Y")
         }

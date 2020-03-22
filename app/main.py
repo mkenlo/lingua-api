@@ -6,6 +6,7 @@ import logging
 from app.models import *
 from app.utils import validate_translations_input
 from math import ceil
+import datetime
 
 api = Blueprint('api')
 DEFAULT_TOPIC = "audio-recordings"
@@ -36,7 +37,7 @@ def saveLanguages(request):
         if "default" in postdata:
             newLang.default = postdata["default"]
         newLang.save()
-        return response.json({"message": "Added One Item"}, status=201)
+        return response.json({"message": "Added One Item", "result": newLang.serialize()}, status=201)
 
     except ValidationError as err:
         return response.json({"message": "Invalid Field Name or Value"}, status=400)
@@ -145,7 +146,7 @@ def saveSentences(request):
                     "No language <{}> found".format(postdata["language"]))
             newSentence.lang = language
             newSentence.save()
-            return response.json({"message": "Added One Item"}, status=201)
+            return response.json({"message": "Added One Item", "result": newSentence.serialize()}, status=201)
         else:
             raise Exception("Invalid Payload.")
     except ValueError as err:
@@ -237,16 +238,17 @@ def saveTranslations(request):
             name=postdata["audiofile"]["name"],
             # encode the string into bytes
             content=postdata["audiofile"]["content"].encode())
-        Translations(
+        translation = Translations(
             author=postdata["author"],
             targetlang=postdata["target_lang"],
             sentence=postdata["sentence"],
-            audiofile=audioFile).save()
+            audiofile=audioFile)
+        translation.save()
 
         # TODO Call Kafka Producer Here
         # data to process {audioFile}
 
-        return response.json({"message": "Added One Item"})
+        return response.json({"message": "Added One Item", "result": translation.serialize()})
 
     except Exception as err:
         return response.json({"message": str(err)}, status=400)
@@ -288,8 +290,10 @@ def saveUsers(request):
             raise ValueError("Missing Post Data")
         if "username" not in postdata:
             raise AttributeError("Missing required <username> field")
-        if Users.objects().filter(username=postdata['username']).first():
-            return response.json({"message": "Existing User"})
+        find_user = Users.objects().filter(
+            username=postdata['username']).first()
+        if find_user:
+            return response.json({"message": "Existing User", "result": find_user.serialize()})
         user = Users(username=postdata["username"])
         if "fullname" in postdata:
             user.fullname = postdata["fullname"]
@@ -298,7 +302,7 @@ def saveUsers(request):
         if "avatar" in postdata:
             user.avatar = postdata["avatar"]
         user.save()
-        return response.json({"message": "Added One Item"})
+        return response.json({"message": "Added One Item", "result": user.serialize()})
     except Exception as err:
         return response.json({"message": str(err)}, status=400)
 
